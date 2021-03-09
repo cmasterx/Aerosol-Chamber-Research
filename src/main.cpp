@@ -195,17 +195,17 @@ void setup() {
 
   // initialize screen
     // initialize
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println("SC Fail");
-    for (;;); // Don't proceed, loop forever
-  }
-  delay(2000);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  // display.setCursor(0, 10);
-  // display.drawBitmap(0, 0, A_M_LOGO, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
-  display.display();
+  // if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+  //   Serial.println("SC Fail");
+  //   for (;;); // Don't proceed, loop forever
+  // }
+  // delay(2000);
+  // display.clearDisplay();
+  // display.setTextSize(1);
+  // display.setTextColor(WHITE);
+  // // display.setCursor(0, 10);
+  // // display.drawBitmap(0, 0, A_M_LOGO, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
+  // display.display();
 
   // initialize bypass pin
   // pinMode(SAFE_BYPASS_PIN, INPUT_PULLUP);
@@ -218,6 +218,7 @@ void setup() {
       // char buffer[64];
       // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
       // Serial.println(buffer);
+      Serial.println("SN Fail");
       for(;;);
     }
 
@@ -232,6 +233,7 @@ void setup() {
   // set up SD card
   if (!SD.begin(SD_PIN)) {
     // Serial.println("Cannot initialize SD card reader");
+    Serial.println("SD Fail");
     for (;;);
   }
 
@@ -264,6 +266,7 @@ void setup() {
   pinMode(13, OUTPUT);
   setTimer1(7811);    // timer interrups every half seconds
   // Serial.println("Initializing Done");
+  Serial.println("Init Pass");
 }
 
 
