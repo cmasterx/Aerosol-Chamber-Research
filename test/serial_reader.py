@@ -4,7 +4,7 @@ import time
 SERIAL_PORT = '/dev/ttyACM0'
 CSV_FILE = './data.csv'
 
-waitdelta = 20
+waitdelta = 60 * 20
 
 def readLine(serialport, buffer, delimiter='\n'):
     buffer += serialport.readline()
