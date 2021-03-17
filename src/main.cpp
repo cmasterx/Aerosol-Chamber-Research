@@ -11,11 +11,12 @@
 #define BAUDRATE 9600
 #endif
 
-#define NUM_SENSORS        3
-#define START_PIN          2
-#define MUX_ADDR        0x70
-#define SD_PIN             4
-#define SAFE_BYPASS_PIN    8
+#define NUM_SENSORS              3
+#define START_PIN                2
+#define MUX_ADDR              0x70
+#define SD_PIN                   4
+#define SAFE_BYPASS_PIN          8
+#define RECORD_INTERRUPT_PIN     2
 
 #define MAX_FILE_COUNTER 1000
 
@@ -125,7 +126,7 @@ bool ledChangeState = false;
 File file;
 
 // sreen instance
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
+// Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
 
 void changeMUXAddress(uint8_t bus) {
@@ -193,23 +194,11 @@ void setup() {
   // initializes i2c
   Wire.begin();
 
-  // initialize screen
-    // initialize
-  // if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-  //   Serial.println("SC Fail");
-  //   for (;;); // Don't proceed, loop forever
-  // }
-  // delay(2000);
-  // display.clearDisplay();
-  // display.setTextSize(1);
-  // display.setTextColor(WHITE);
-  // // display.setCursor(0, 10);
-  // // display.drawBitmap(0, 0, A_M_LOGO, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
-  // display.display();
-
   // initialize bypass pin
   // pinMode(SAFE_BYPASS_PIN, INPUT_PULLUP);
   
+  Serial.println("I2C initialized");
+
   // initializes bme sensors
   for (int i = 0; i  < sizeof(bme) / sizeof(Adafruit_BME280); ++i) {
     changeMUXAddress(muxBusBME[i]);
@@ -218,7 +207,7 @@ void setup() {
       // char buffer[64];
       // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
       // Serial.println(buffer);
-      Serial.println("SN Fail");
+      Serial.println("BME Fail");
       for(;;);
     }
 
@@ -236,6 +225,8 @@ void setup() {
     Serial.println("SD Fail");
     for (;;);
   }
+
+  Serial.println("SD Initialized");
 
   // looks for a valid file
   // char filename[64];
@@ -273,7 +264,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if (ledChangeState) {
+  if (record && ledChangeState) {
     ledChangeState = false;
     toggleLED();
 
@@ -284,6 +275,11 @@ void loop() {
 
     file.println("");
     file.close();
+    Serial.println("Recording");
+  }
+  else if (!record) {
+    isLEDOn = true;
+    toggleLED();
   }
 }
 
