@@ -149,22 +149,6 @@ void printBME(uint8_t sensorIdx) {
   changeMUXAddress(sensorIdx);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
-  // char buffer[32];
-  // sprintf(buffer, "BME %d:", sensorIdx);
-  // Serial.println(buffer);
-
-  // Serial.print("Temperature = ");
-	// Serial.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
-	// Serial.println("*F");
-
-	// Serial.print("Pressure = ");
-	// Serial.print(bmes.readPressure() / 100.0F);
-	// Serial.println("hPa");
-
-	// Serial.print("Humidity = ");
-	// Serial.print(bmes.readHumidity());
-	// Serial.println("%");
-
   file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
   file.print(',');
   file.print(bmes.readPressure() / 100.0F);
@@ -190,7 +174,8 @@ void setTimer1(unsigned int time) {
 
 void setup() {
   Serial.begin(BAUDRATE);
-  // Serial.println("Initializing...");
+  Serial.println("Initializing...");
+
   // initializes i2c
   Wire.begin();
 
@@ -210,13 +195,6 @@ void setup() {
       Serial.println("BME Fail");
       for(;;);
     }
-
-  // open file
-  // file = SD.open("data.csv", FILE_WRITE);
-  // if (!file) {
-  //   Serial.println("Unable to open the file");
-  //   for(;;);
-  // }
   }
 
   // set up SD card
@@ -227,29 +205,6 @@ void setup() {
   }
 
   Serial.println("SD Initialized");
-
-  // looks for a valid file
-  // char filename[64];
-  // for (unsigned int i = 0; i < 1000; ++i) {
-  //   sprintf(filename, "csv_data_%d.csv", i + 1);
-  //   if (!SD.exists(filename)) {
-  //     file = SD.open(filename, FILE_WRITE);
-  //   }
-  // }
-
-  // char filename[] = "File.csv";
-  // file = SD.open(filename, FILE_WRITE);
-  
-  // if (!file) {
-  //   // Serial.println("File open error");
-  //   while(1);
-  // }
-  // else {
-  //   // char buff[72];
-  //   // sprintf(buff, "Successfully created file %s", filename);
-  //   // Serial.println(buff);
-  //   file.close();
-  // }
   
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
