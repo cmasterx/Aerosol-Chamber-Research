@@ -15,8 +15,10 @@
 #define START_PIN                2
 #define MUX_ADDR              0x70
 #define SD_PIN                   4
-#define SAFE_BYPASS_PIN          8
+#define SAFE_BYPASS_PIN          9
 #define RECORD_INTERRUPT_PIN     2
+#define LED_READY_PIN            7
+#define LED_RECORDING_PIN        8
 
 #define MAX_FILE_COUNTER 1000
 
