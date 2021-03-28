@@ -14,9 +14,8 @@
 #define NUM_SENSORS              3
 #define START_PIN                2
 #define MUX_ADDR              0x70
-#define SD_PIN                   4
+#define SD_PIN                  10
 #define SAFE_BYPASS_PIN          9
-#define RECORD_INTERRUPT_PIN     2
 #define LED_READY_PIN            7
 #define LED_RECORDING_PIN        8
 
@@ -109,11 +108,12 @@ enum RECORDING_INTERVAL {
 // 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 // };
 
+#define INFO_DATA F("Code and designs found at: https://github.com/cmasterx/Aerosol-Chamber-Research")
 
 // BME sensors
 Adafruit_BME280 bme[NUM_SENSORS];
 uint8_t addressBME[] = { 0x76, 0x76,0x76 };
-uint8_t muxBusBME[] =   { 0x00, 0x01, 0x02 };
+uint8_t muxBusBME[] =   { 0x02, 0x03, 0x04 };
 
 // recording state
 bool record = false;
@@ -187,7 +187,7 @@ void setup() {
   Serial.println("I2C initialized");
 
   // initializes bme sensors
-  for (int i = 0; i  < sizeof(bme) / sizeof(Adafruit_BME280); ++i) {
+  for (int i = 0; i < sizeof(bme) / sizeof(Adafruit_BME280); ++i) {
     changeMUXAddress(muxBusBME[i]);
 
     if (!bme[i].begin(addressBME[i])) {
@@ -205,6 +205,12 @@ void setup() {
     Serial.println("SD Fail");
     for (;;);
   }
+
+  // initializes info file
+  SD.remove("info.txt");
+  File f = SD.open("info.txt", FILE_WRITE);
+  f.print(INFO_DATA);
+  f.close();
 
   Serial.println("SD Initialized");
   
