@@ -85,6 +85,8 @@ enum RECORDING_INTERVAL {
 \n   indicating that logger is logging sensor data \
 \n5. Press the same button as step 4 to stop recording. The LED should stop flashing.\
 \n\
+\nRefer to the link above for full detailed instructions.\
+\n\
 \n\
 \n[ Important Information] \
 \n- The data logger is resettable with the reset button found at the bottom side of the data logger\
