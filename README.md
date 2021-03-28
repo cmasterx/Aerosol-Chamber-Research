@@ -16,11 +16,13 @@ Built for Aerosol research team at Aerosol Technologies Lab.
 1. Install PlatformIO for VSCode
 2. Build project using `nanoatmega328` profile
 
-## Images
+## Gallery
 ### Prototype
 ![Prototype v1](img/prototype_v1.jpg)
+
 ### CAD
-todo
+![Full Model](img/full-cover.png)
+![No Cover](img/no-cover.png)
 
 ## Hardware
 ### Components
