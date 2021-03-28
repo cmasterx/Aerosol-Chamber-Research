@@ -11,11 +11,13 @@
 #define BAUDRATE 9600
 #endif
 
-#define NUM_SENSORS        3
-#define START_PIN          2
-#define MUX_ADDR        0x70
-#define SD_PIN             4
-#define SAFE_BYPASS_PIN    8
+#define NUM_SENSORS              3
+#define START_PIN                2
+#define MUX_ADDR              0x70
+#define SD_PIN                  10
+#define SAFE_BYPASS_PIN          9
+#define LED_READY_PIN            7
+#define LED_RECORDING_PIN        8
 
 #define MAX_FILE_COUNTER 1000
 
@@ -106,11 +108,12 @@ enum RECORDING_INTERVAL {
 // 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 // };
 
+#define INFO_DATA F("Code and designs found at: https://github.com/cmasterx/Aerosol-Chamber-Research")
 
 // BME sensors
 Adafruit_BME280 bme[NUM_SENSORS];
 uint8_t addressBME[] = { 0x76, 0x76,0x76 };
-uint8_t muxBusBME[] =   { 0x00, 0x01, 0x02 };
+uint8_t muxBusBME[] =   { 0x02, 0x03, 0x04 };
 
 // recording state
 bool record = false;
@@ -125,7 +128,7 @@ bool ledChangeState = false;
 File file;
 
 // sreen instance
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
+// Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
 
 void changeMUXAddress(uint8_t bus) {
@@ -147,22 +150,6 @@ void printBME(uint8_t sensorIdx) {
 
   changeMUXAddress(sensorIdx);
   Adafruit_BME280 &bmes = bme[sensorIdx];
-
-  // char buffer[32];
-  // sprintf(buffer, "BME %d:", sensorIdx);
-  // Serial.println(buffer);
-
-  // Serial.print("Temperature = ");
-	// Serial.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
-	// Serial.println("*F");
-
-	// Serial.print("Pressure = ");
-	// Serial.print(bmes.readPressure() / 100.0F);
-	// Serial.println("hPa");
-
-	// Serial.print("Humidity = ");
-	// Serial.print(bmes.readHumidity());
-	// Serial.println("%");
 
   file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
   file.print(',');
@@ -189,74 +176,43 @@ void setTimer1(unsigned int time) {
 
 void setup() {
   Serial.begin(BAUDRATE);
-  // Serial.println("Initializing...");
+  Serial.println("Initializing...");
+
   // initializes i2c
   Wire.begin();
-
-  // initialize screen
-    // initialize
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println("SC Fail");
-    for (;;); // Don't proceed, loop forever
-  }
-  delay(2000);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  // display.setCursor(0, 10);
-  // display.drawBitmap(0, 0, A_M_LOGO, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
-  display.display();
 
   // initialize bypass pin
   // pinMode(SAFE_BYPASS_PIN, INPUT_PULLUP);
   
+  Serial.println("I2C initialized");
+
   // initializes bme sensors
-  for (int i = 0; i  < sizeof(bme) / sizeof(Adafruit_BME280); ++i) {
+  for (int i = 0; i < sizeof(bme) / sizeof(Adafruit_BME280); ++i) {
     changeMUXAddress(muxBusBME[i]);
 
     if (!bme[i].begin(addressBME[i])) {
       // char buffer[64];
       // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
       // Serial.println(buffer);
+      Serial.println("BME Fail");
       for(;;);
     }
-
-  // open file
-  // file = SD.open("data.csv", FILE_WRITE);
-  // if (!file) {
-  //   Serial.println("Unable to open the file");
-  //   for(;;);
-  // }
   }
 
   // set up SD card
   if (!SD.begin(SD_PIN)) {
     // Serial.println("Cannot initialize SD card reader");
+    Serial.println("SD Fail");
     for (;;);
   }
 
-  // looks for a valid file
-  // char filename[64];
-  // for (unsigned int i = 0; i < 1000; ++i) {
-  //   sprintf(filename, "csv_data_%d.csv", i + 1);
-  //   if (!SD.exists(filename)) {
-  //     file = SD.open(filename, FILE_WRITE);
-  //   }
-  // }
+  // initializes info file
+  SD.remove("info.txt");
+  File f = SD.open("info.txt", FILE_WRITE);
+  f.print(INFO_DATA);
+  f.close();
 
-  // char filename[] = "File.csv";
-  // file = SD.open(filename, FILE_WRITE);
-  
-  // if (!file) {
-  //   // Serial.println("File open error");
-  //   while(1);
-  // }
-  // else {
-  //   // char buff[72];
-  //   // sprintf(buff, "Successfully created file %s", filename);
-  //   // Serial.println(buff);
-  //   file.close();
-  // }
+  Serial.println("SD Initialized");
   
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
@@ -264,13 +220,14 @@ void setup() {
   pinMode(13, OUTPUT);
   setTimer1(7811);    // timer interrups every half seconds
   // Serial.println("Initializing Done");
+  Serial.println("Init Pass");
 }
 
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if (ledChangeState) {
+  if (record && ledChangeState) {
     ledChangeState = false;
     toggleLED();
 
@@ -281,6 +238,11 @@ void loop() {
 
     file.println("");
     file.close();
+    Serial.println("Recording");
+  }
+  else if (!record) {
+    isLEDOn = true;
+    toggleLED();
   }
 }
 
