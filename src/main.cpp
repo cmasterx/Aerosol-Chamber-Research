@@ -16,7 +16,6 @@
 #define MUX_ADDR              0x70
 #define SD_PIN                  10
 #define SAFE_BYPASS_PIN          9
-#define LED_READY_PIN            7
 #define LED_RECORDING_PIN        8
 
 #define MAX_FILE_COUNTER 1000
@@ -139,7 +138,7 @@ void changeState() {
 
 void toggleLED() {
   isLEDOn = !isLEDOn;
-  digitalWrite(13, isLEDOn);
+  digitalWrite(LED_RECORDING_PIN, isLEDOn);
 }
 
 void printBME(uint8_t sensorIdx) {
@@ -213,7 +212,7 @@ void setup() {
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(START_PIN), changeState, FALLING);
-  pinMode(13, OUTPUT);
+  pinMode(LED_RECORDING_PIN, OUTPUT);
   setTimer1(7811);    // timer interrups every half seconds
   // Serial.println("Initializing Done");
   Serial.println("Init Pass");
