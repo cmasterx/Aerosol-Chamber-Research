@@ -146,6 +146,8 @@ void printBME(uint8_t sensorIdx) {
   changeMUXAddress(sensorIdx);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
+  file.print(millis());
+  file.print(',');
   file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
   file.print(',');
   file.print(bmes.readPressure() / 100.0F);
@@ -172,7 +174,12 @@ void setTimer1(unsigned int time) {
 void setup() {
   Serial.begin(BAUDRATE);
   Serial.println("Initializing...");
-
+  // enable led pin
+  pinMode(LED_RECORDING_PIN, OUTPUT);
+  digitalWrite(LED_RECORDING_PIN, HIGH);
+  delay(400);
+  digitalWrite(LED_RECORDING_PIN, LOW);
+  
   // initializes i2c
   Wire.begin();
 
@@ -189,6 +196,7 @@ void setup() {
       // char buffer[64];
       // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
       // Serial.println(buffer);
+      digitalWrite(LED_RECORDING_PIN, HIGH);
       Serial.println("BME Fail");
       for(;;);
     }
@@ -197,6 +205,7 @@ void setup() {
   // set up SD card
   if (!SD.begin(SD_PIN)) {
     // Serial.println("Cannot initialize SD card reader");
+    digitalWrite(LED_RECORDING_PIN, HIGH);
     Serial.println("SD Fail");
     for (;;);
   }
@@ -212,22 +221,26 @@ void setup() {
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(START_PIN), changeState, FALLING);
-  pinMode(LED_RECORDING_PIN, OUTPUT);
   setTimer1(7811);    // timer interrups every half seconds
-  // Serial.println("Initializing Done");
+
+  // delay to remove some button debounce and show ready state
   Serial.println("Init Pass");
+  pinMode(8, OUTPUT);
+    for (unsigned int i = 0; i < 2; ++i) {
+    digitalWrite(LED_RECORDING_PIN, HIGH);
+    delay(125);
+    digitalWrite(LED_RECORDING_PIN, LOW);
+    delay(250);
+  }
+  digitalWrite(LED_RECORDING_PIN, HIGH);
   delay(1000);
+  digitalWrite(LED_RECORDING_PIN, LOW);
+  
   record = false;
 }
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  if (!enableButton) {
-    delay(200);
-    enableButton = true;
-  }
-  
   if (record && ledChangeState) {
     ledChangeState = false;
     toggleLED();
