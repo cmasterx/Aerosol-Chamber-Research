@@ -114,7 +114,6 @@ bool takeMeasurement = false;
 // LED
 bool isLEDOn = false;
 bool ledChangeState = false;
-bool enableButton = true;
 
 // SD Card
 File file;
@@ -129,11 +128,23 @@ void changeMUXAddress(uint8_t bus) {
   Wire.endTransmission();
 }
 
+/**
+ * @brief Button interrupt handler - handles when button pin 8 is pressed
+ *        Toggles the recording state, whether to log data or not
+ */
 void changeState() {
-  if (enableButton) {
+  static unsigned long lastPressed = 0;   // time since button last pressed
+  const unsigned long epsilon = 300;       // button state can only change after 15ms
+
+  unsigned long currentTime = millis();
+
+  // if button pressed is after epsilon, change record state
+  if (currentTime - lastPressed > epsilon) {
     record = !record;
-    enableButton = false;
+    Serial.println("Button Pressed");
   }
+
+  lastPressed = currentTime;
 }
 
 void toggleLED() {
@@ -146,8 +157,6 @@ void printBME(uint8_t sensorIdx) {
   changeMUXAddress(sensorIdx);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
-  file.print(millis());
-  file.print(',');
   file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
   file.print(',');
   file.print(bmes.readPressure() / 100.0F);
@@ -246,11 +255,14 @@ void loop() {
     toggleLED();
 
     file = SD.open("data.csv", FILE_WRITE);
+    file.print(millis());
+    file.print(',');
+
     printBME(0);
     printBME(1);
     printBME(2);
 
-    file.println("");
+    file.print('\n');
     file.close();
     Serial.println("Recording");
   }
