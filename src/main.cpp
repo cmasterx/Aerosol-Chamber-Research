@@ -121,7 +121,11 @@ File file;
 // sreen instance
 // Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
-
+/**
+ * @brief Change i2c mux address to specified address
+ * 
+ * @param bus mux address to switch
+ */
 void changeMUXAddress(uint8_t bus) {
   Wire.beginTransmission(0x70);
   Wire.write(1 << bus);
@@ -147,6 +151,10 @@ void changeState() {
   lastPressed = currentTime;
 }
 
+/**
+ * @brief When function is called, LED will toggle from on to off or vice-versa
+ * 
+ */
 void toggleLED() {
   isLEDOn = !isLEDOn;
   digitalWrite(LED_RECORDING_PIN, isLEDOn);
@@ -154,13 +162,16 @@ void toggleLED() {
 
 void printBME(uint8_t sensorIdx) {
 
+  // switch mux of specified sensor and aquire bme object instance
   changeMUXAddress(muxBusBME[sensorIdx]);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
+  // obtains reading from sensor
   float temperatue = bmes.readTemperature();
   float pressure = bmes.readPressure();
   float humidity = bmes.readHumidity();
 
+  // writes sensor readings to file
   file.print((temperatue * 9.0f / 5.0f ) + 32);
   file.print(',');
   file.print(pressure / 100.0F);
@@ -168,6 +179,7 @@ void printBME(uint8_t sensorIdx) {
   file.print(humidity);
   file.print(',');
   
+  // prints sensor reading
   #if defined(DEBUG) || defined(VERBOSE)
   Serial.print("Sensor idx: ");
   Serial.print(sensorIdx);
@@ -182,6 +194,11 @@ void printBME(uint8_t sensorIdx) {
   
 }
 
+/**
+ * @brief Sets the hardware timer
+ * 
+ * @param time interval that interrupt will be called
+ */
 void setTimer1(unsigned int time) {
   cli();
   TCCR1A = 0;
@@ -218,9 +235,7 @@ void setup() {
     changeMUXAddress(muxBusBME[i]);
 
     if (!bme[i].begin(addressBME[i])) {
-      // char buffer[64];
-      // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
-      // Serial.println(buffer);
+
       digitalWrite(LED_RECORDING_PIN, HIGH);
       char str_buff[16];
       sprintf(str_buff, "BME Fail ID: %d", i);
@@ -231,7 +246,7 @@ void setup() {
 
   // set up SD card
   if (!SD.begin(SD_PIN)) {
-    // Serial.println("Cannot initialize SD card reader");
+
     digitalWrite(LED_RECORDING_PIN, HIGH);
     Serial.println("SD Fail");
     for (;;);
@@ -248,7 +263,7 @@ void setup() {
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(START_PIN), changeState, FALLING);
-  setTimer1(7811);    // timer interrups every half seconds
+  setTimer1(7811);    // timer interrups every half second
 
   // delay to remove some button debounce and show ready state
   Serial.println("Init Pass");
