@@ -168,7 +168,7 @@ void printBME(uint8_t sensorIdx) {
   file.print(humidity);
   file.print(',');
   
-  #ifdef DEBUG
+  #if defined(DEBUG) || defined(VERBOSE)
   Serial.print("Sensor idx: ");
   Serial.print(sensorIdx);
   Serial.print(" - ");
