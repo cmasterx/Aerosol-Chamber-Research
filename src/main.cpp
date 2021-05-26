@@ -154,15 +154,31 @@ void toggleLED() {
 
 void printBME(uint8_t sensorIdx) {
 
-  changeMUXAddress(sensorIdx);
+  changeMUXAddress(muxBusBME[sensorIdx]);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
-  file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
+  float temperatue = bmes.readTemperature();
+  float pressure = bmes.readPressure();
+  float humidity = bmes.readHumidity();
+
+  file.print((temperatue * 9.0f / 5.0f ) + 32);
   file.print(',');
-  file.print(bmes.readPressure() / 100.0F);
+  file.print(pressure / 100.0F);
   file.print(',');
-  file.print(bmes.readHumidity());
+  file.print(humidity);
   file.print(',');
+  
+  #ifdef DEBUG
+  Serial.print("Sensor idx: ");
+  Serial.print(sensorIdx);
+  Serial.print(" - ");
+  Serial.print((temperatue * 9.0f / 5.0f ) + 32);
+  Serial.print(',');
+  Serial.print(pressure / 100.0F);
+  Serial.print(',');
+  Serial.print(humidity);
+  Serial.print(", ");
+  #endif
   
 }
 
@@ -206,7 +222,9 @@ void setup() {
       // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
       // Serial.println(buffer);
       digitalWrite(LED_RECORDING_PIN, HIGH);
-      Serial.println("BME Fail");
+      char str_buff[16];
+      sprintf(str_buff, "BME Fail ID: %d", i);
+      Serial.println(str_buff);
       for(;;);
     }
   }
@@ -258,9 +276,9 @@ void loop() {
     file.print(millis());
     file.print(',');
 
-    printBME(0);
-    printBME(1);
-    printBME(2);
+    for (int i = 0; i < NUM_SENSORS; ++i) {
+      printBME(i);
+    }
 
     file.print('\n');
     file.close();
