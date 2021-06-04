@@ -16,7 +16,6 @@
 #define MUX_ADDR              0x70
 #define SD_PIN                  10
 #define SAFE_BYPASS_PIN          9
-#define LED_READY_PIN            7
 #define LED_RECORDING_PIN        8
 
 #define MAX_FILE_COUNTER 1000
@@ -115,7 +114,6 @@ bool takeMeasurement = false;
 // LED
 bool isLEDOn = false;
 bool ledChangeState = false;
-bool enableButton = true;
 
 // SD Card
 File file;
@@ -123,39 +121,84 @@ File file;
 // sreen instance
 // Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,&Wire, OLED_RESET);
 
-
+/**
+ * @brief Change i2c mux address to specified address
+ * 
+ * @param bus mux address to switch
+ */
 void changeMUXAddress(uint8_t bus) {
   Wire.beginTransmission(0x70);
   Wire.write(1 << bus);
   Wire.endTransmission();
 }
 
+/**
+ * @brief Button interrupt handler - handles when button pin 8 is pressed
+ *        Toggles the recording state, whether to log data or not
+ */
 void changeState() {
-  if (enableButton) {
+  static unsigned long lastPressed = 0;   // time since button last pressed
+  const unsigned long epsilon = 300;       // button state can only change after 15ms
+
+  unsigned long currentTime = millis();
+
+  // if button pressed is after epsilon, change record state
+  if (currentTime - lastPressed > epsilon) {
     record = !record;
-    enableButton = false;
+    Serial.println("Button Pressed");
   }
+
+  lastPressed = currentTime;
 }
 
+/**
+ * @brief When function is called, LED will toggle from on to off or vice-versa
+ * 
+ */
 void toggleLED() {
   isLEDOn = !isLEDOn;
-  digitalWrite(13, isLEDOn);
+  digitalWrite(LED_RECORDING_PIN, isLEDOn);
 }
 
 void printBME(uint8_t sensorIdx) {
 
-  changeMUXAddress(sensorIdx);
+  // switch mux of specified sensor and aquire bme object instance
+  changeMUXAddress(muxBusBME[sensorIdx]);
   Adafruit_BME280 &bmes = bme[sensorIdx];
 
-  file.print((bmes.readTemperature() * 9.0f / 5.0f ) + 32);
+  // obtains reading from sensor
+  float temperatue = bmes.readTemperature();
+  float pressure = bmes.readPressure();
+  float humidity = bmes.readHumidity();
+
+  // writes sensor readings to file
+  file.print((temperatue * 9.0f / 5.0f ) + 32);
   file.print(',');
-  file.print(bmes.readPressure() / 100.0F);
+  file.print(pressure / 100.0F);
   file.print(',');
-  file.print(bmes.readHumidity());
+  file.print(humidity);
   file.print(',');
+  
+  // prints sensor reading
+  #if defined(DEBUG) || defined(VERBOSE)
+  Serial.print("Sensor idx: ");
+  Serial.print(sensorIdx);
+  Serial.print(" - ");
+  Serial.print((temperatue * 9.0f / 5.0f ) + 32);
+  Serial.print(',');
+  Serial.print(pressure / 100.0F);
+  Serial.print(',');
+  Serial.print(humidity);
+  Serial.print(", ");
+  #endif
   
 }
 
+/**
+ * @brief Sets the hardware timer
+ * 
+ * @param time interval that interrupt will be called
+ */
 void setTimer1(unsigned int time) {
   cli();
   TCCR1A = 0;
@@ -173,7 +216,12 @@ void setTimer1(unsigned int time) {
 void setup() {
   Serial.begin(BAUDRATE);
   Serial.println("Initializing...");
-
+  // enable led pin
+  pinMode(LED_RECORDING_PIN, OUTPUT);
+  digitalWrite(LED_RECORDING_PIN, HIGH);
+  delay(400);
+  digitalWrite(LED_RECORDING_PIN, LOW);
+  
   // initializes i2c
   Wire.begin();
 
@@ -187,17 +235,19 @@ void setup() {
     changeMUXAddress(muxBusBME[i]);
 
     if (!bme[i].begin(addressBME[i])) {
-      // char buffer[64];
-      // sprintf(buffer, "BME Index [%i] cannot be initialized with address %x", i, bme[i]);
-      // Serial.println(buffer);
-      Serial.println("BME Fail");
+
+      digitalWrite(LED_RECORDING_PIN, HIGH);
+      char str_buff[16];
+      sprintf(str_buff, "BME Fail ID: %d", i);
+      Serial.println(str_buff);
       for(;;);
     }
   }
 
   // set up SD card
   if (!SD.begin(SD_PIN)) {
-    // Serial.println("Cannot initialize SD card reader");
+
+    digitalWrite(LED_RECORDING_PIN, HIGH);
     Serial.println("SD Fail");
     for (;;);
   }
@@ -213,32 +263,39 @@ void setup() {
   // initializes pins and interrupts
   pinMode(START_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(START_PIN), changeState, FALLING);
-  pinMode(13, OUTPUT);
-  setTimer1(7811);    // timer interrups every half seconds
-  // Serial.println("Initializing Done");
+  setTimer1(7811);    // timer interrups every half second
+
+  // delay to remove some button debounce and show ready state
   Serial.println("Init Pass");
+  pinMode(8, OUTPUT);
+    for (unsigned int i = 0; i < 2; ++i) {
+    digitalWrite(LED_RECORDING_PIN, HIGH);
+    delay(125);
+    digitalWrite(LED_RECORDING_PIN, LOW);
+    delay(250);
+  }
+  digitalWrite(LED_RECORDING_PIN, HIGH);
   delay(1000);
+  digitalWrite(LED_RECORDING_PIN, LOW);
+  
   record = false;
 }
 
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  if (!enableButton) {
-    delay(200);
-    enableButton = true;
-  }
-  
   if (record && ledChangeState) {
     ledChangeState = false;
     toggleLED();
 
     file = SD.open("data.csv", FILE_WRITE);
-    printBME(0);
-    printBME(1);
-    printBME(2);
+    file.print(millis());
+    file.print(',');
 
-    file.println("");
+    for (int i = 0; i < NUM_SENSORS; ++i) {
+      printBME(i);
+    }
+
+    file.print('\n');
     file.close();
     Serial.println("Recording");
   }
